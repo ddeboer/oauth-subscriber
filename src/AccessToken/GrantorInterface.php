@@ -12,9 +12,9 @@ interface GrantorInterface
     /**
      * Get access token
      *
-     * @param  ClientInterface $client the client
+     * @param  ClientInterface $client the token client
      * @param  array           $config the POST body configuration
-     * @return AccessToken
+     * @return \GuzzleHttp\Subscriber\Oauth\AccessToken\AccessToken
      */
     public function getToken(ClientInterface $client, array $config = []);
 }

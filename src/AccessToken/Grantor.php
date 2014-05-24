@@ -24,14 +24,14 @@ final class Grantor implements GrantorInterface
     private $required;
 
     /**
-     * @param string $type     the grant type
-     * @param array  $required required POST parameters
-     * @param array  $defaults default POST parameter values
+     * @param string $grantType the grant type
+     * @param array  $required  required POST parameters
+     * @param array  $defaults  default POST parameter values
      */
-    private function __construct($type, array $required = [], array $defaults = [])
+    private function __construct($grantType, array $required = [], array $defaults = [])
     {
         $this->required  = $required;
-        $this->defaults += $defaults + ['grant_type' => $type];
+        $this->defaults += $defaults + ['grant_type' => $grantType];
     }
 
     /**
@@ -58,7 +58,7 @@ final class Grantor implements GrantorInterface
 
     /**
      * (non-PHPdoc)
-     * @see \GuzzleHttp\Subscriber\Oauth\GrantType\GrantTypeInterface::getToken()
+     * @see \GuzzleHttp\Subscriber\Oauth\AccessToken\GrantorInterface::getToken()
      */
     public function getToken(ClientInterface $client, array $config = [])
     {

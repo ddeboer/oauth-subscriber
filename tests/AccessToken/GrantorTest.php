@@ -14,6 +14,13 @@ class GrantorTest extends TestCase
         'scope'        => __NAMESPACE__
     ];
 
+    private $client;
+
+    protected function setUp()
+    {
+        $this->client = $this->getMockForAbstractClass('GuzzleHttp\ClientInterface');
+    }
+
     public function testToStringReturnsType()
     {
         $this->assertSame('password', (string) Grantor::password());
@@ -26,9 +33,7 @@ class GrantorTest extends TestCase
             ->expects($this->once())
             ->method('json')
             ->will($this->returnValue($this->jsonData));
-
-        $client = $this->getMockForAbstractClass('GuzzleHttp\ClientInterface');
-        $client
+        $this->client
             ->expects($this->once())
             ->method('post')
             ->will($this->returnValue($response));
@@ -36,7 +41,7 @@ class GrantorTest extends TestCase
         $grantor = Grantor::clientCredentials(['client_id' => __FUNCTION__]);
         $this->assertInstanceOf(
             'GuzzleHttp\Subscriber\Oauth\AccessToken\AccessToken',
-            $grantor->getToken($client)
+            $grantor->getToken($this->client)
         );
     }
 }
