@@ -1,6 +1,6 @@
 <?php
 
-namespace GuzzleHttp\Tests\Oauth1;
+namespace GuzzleHttp\Tests\Subscriber\Oauth;
 
 use GuzzleHttp\Adapter\Transaction;
 use GuzzleHttp\Client;
