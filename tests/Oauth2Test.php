@@ -12,6 +12,8 @@ use GuzzleHttp\ClientInterface;
 
 class Oauth2Test extends TestCase
 {
+    const TOKEN = 'foo';
+
     private $tokenClient;
 
     private $tokenGrantor;
@@ -68,7 +70,7 @@ class Oauth2Test extends TestCase
 
         $this->tokenGrantor
             ->expects($this->never())
-            ->method('getToken');
+            ->method('__invoke');
 
         $this->oauth->onBefore($event);
     }
@@ -82,13 +84,13 @@ class Oauth2Test extends TestCase
             ->with('auth')
             ->will($this->returnValue('oauth2'));
 
-        $request = $this->buildRequest($config, 'foo');
+        $request = $this->buildRequest($config, self::TOKEN);
 
         $event = $this->buildEvent('GuzzleHttp\Event\BeforeEvent', $request);
 
         $this->tokenGrantor
             ->expects($this->once())
-            ->method('getToken')
+            ->method('__invoke')
             ->with($this->tokenClient)
             ->will($this->returnValue($this->buildAccessToken()));
 
@@ -108,7 +110,7 @@ class Oauth2Test extends TestCase
             ->method('set')
             ->with('retried', true);
 
-        $request = $this->buildRequest($config, 'foo');
+        $request = $this->buildRequest($config, self::TOKEN);
 
         $response = $this->buildResponse(401);
 
@@ -131,7 +133,7 @@ class Oauth2Test extends TestCase
 
         $this->tokenGrantor
             ->expects($this->once())
-            ->method('getToken')
+            ->method('__invoke')
             ->with($this->tokenClient)
             ->will($this->returnValue($this->buildAccessToken()));
 
@@ -186,6 +188,6 @@ class Oauth2Test extends TestCase
 
     private function buildAccessToken()
     {
-        return new AccessToken('foo', 0, 'test', __CLASS__);
+        return new AccessToken(self::TOKEN, 0, __CLASS__, __NAMESPACE__);
     }
 }

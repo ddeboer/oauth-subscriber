@@ -10,11 +10,11 @@ use GuzzleHttp\ClientInterface;
 interface GrantorInterface
 {
     /**
-     * Get access token
+     * Grant an access token
      *
      * @param  ClientInterface $client the token client
      * @param  array           $config the POST body configuration
      * @return \GuzzleHttp\Subscriber\Oauth\AccessToken\AccessToken
      */
-    public function getToken(ClientInterface $client, array $config = []);
+    public function __invoke(ClientInterface $client, array $config = []);
 }

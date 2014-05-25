@@ -8,7 +8,6 @@ use GuzzleHttp\Event\BeforeEvent;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Event\RequestEvents;
 use GuzzleHttp\Event\SubscriberInterface;
-use GuzzleHttp\Subscriber\Oauth\AccessToken\GrantorInterface;
 
 /**
  * OAuth2 subscriber
@@ -29,15 +28,15 @@ final class Oauth2 implements SubscriberInterface
     private $tokenClient;
 
     /**
-     * @var GrantorInterface
+     * @var callable
      */
     private $tokenGrantor;
 
     /**
-     * @param GrantorInterface $tokenGrantor
+     * @param callable         $tokenGrantor
      * @param ClientInterface  $tokenClient
      */
-    public function __construct(GrantorInterface $tokenGrantor, ClientInterface $tokenClient)
+    public function __construct(callable $tokenGrantor, ClientInterface $tokenClient)
     {
         $this->tokenGrantor = $tokenGrantor;
         $this->tokenClient  = $tokenClient;
@@ -60,10 +59,11 @@ final class Oauth2 implements SubscriberInterface
     public function onBefore(BeforeEvent $event)
     {
         $request = $event->getRequest();
+        $grantor = $this->tokenGrantor;
 
         // Only sign requests using "auth"="oauth2"
         if ($request->getConfig()->get('auth') == 'oauth2'
-            && $token = $this->tokenGrantor->getToken($this->tokenClient)
+            && $token = $grantor($this->tokenClient)
         ) {
             $token->addAuthorizationHeader($request);
         }
@@ -79,10 +79,11 @@ final class Oauth2 implements SubscriberInterface
     {
         $request = $event->getRequest();
         $config  = $request->getConfig();
+        $grantor = $this->tokenGrantor;
 
         if (401 == $event->getResponse()->getStatusCode() && !$config->get('retried')) {
             $config->set('retried', true);
-            if ($token = $this->tokenGrantor->getToken($this->tokenClient)) {
+            if ($token = $grantor($this->tokenClient)) {
                 $token->addAuthorizationHeader($request);
                 $event->intercept($event->getClient()->send($request));
             }

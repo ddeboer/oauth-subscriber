@@ -58,9 +58,9 @@ final class Grantor implements GrantorInterface
 
     /**
      * (non-PHPdoc)
-     * @see \GuzzleHttp\Subscriber\Oauth\AccessToken\GrantorInterface::getToken()
+     * @see \GuzzleHttp\Subscriber\Oauth\AccessToken\GrantorInterface::__invoke()
      */
-    public function getToken(ClientInterface $client, array $config = [])
+    public function __invoke(ClientInterface $client, array $config = [])
     {
         $config   = Collection::fromConfig($config, $this->defaults, $this->required);
         $response = $client->post(null, ['body' => $config->toArray()]);

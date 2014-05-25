@@ -26,7 +26,7 @@ class GrantorTest extends TestCase
         $this->assertSame('password', (string) Grantor::password());
     }
 
-    public function testGetTokenReturnsAccessToken()
+    public function testInvokeReturnsAccessToken()
     {
         $response = $this->getMockForAbstractClass('GuzzleHttp\Message\ResponseInterface');
         $response
@@ -41,7 +41,7 @@ class GrantorTest extends TestCase
         $grantor = Grantor::clientCredentials(['client_id' => __FUNCTION__]);
         $this->assertInstanceOf(
             'GuzzleHttp\Subscriber\Oauth\AccessToken\AccessToken',
-            $grantor->getToken($this->client)
+            $grantor($this->client)
         );
     }
 }
