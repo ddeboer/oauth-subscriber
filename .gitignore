@@ -4,3 +4,8 @@ coverage
 phpunit.xml
 composer.lock
 vendor/
+
+# Ignore eclipse project files
+.project
+.settings
+.buildpath

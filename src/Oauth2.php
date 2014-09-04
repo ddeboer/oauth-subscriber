@@ -2,103 +2,91 @@
 
 namespace GuzzleHttp\Subscriber\Oauth;
 
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Event\BeforeEvent;
 use GuzzleHttp\Event\ErrorEvent;
 use GuzzleHttp\Event\RequestEvents;
 use GuzzleHttp\Event\SubscriberInterface;
-use GuzzleHttp\Message\RequestInterface;
-use GuzzleHttp\Subscriber\Oauth\GrantType\GrantTypeInterface;
 
-class Oauth2 implements SubscriberInterface
+/**
+ * OAuth2 subscriber
+ */
+final class Oauth2 implements SubscriberInterface
 {
-    private $accessToken;
-    private $grantType;
+    /**
+     * @var array
+     */
+    private $events = [
+        'before' => ['onBefore', RequestEvents::SIGN_REQUEST],
+        'error'  => ['onError', RequestEvents::EARLY],
+    ];
 
-    public function __construct(GrantTypeInterface $grantType = null)
+    /**
+     * @var ClientInterface
+     */
+    private $tokenClient;
+
+    /**
+     * @var callable
+     */
+    private $tokenGrantor;
+
+    /**
+     * @param callable         $tokenGrantor
+     * @param ClientInterface  $tokenClient
+     */
+    public function __construct(callable $tokenGrantor, ClientInterface $tokenClient)
     {
-        $this->grantType = $grantType;
+        $this->tokenGrantor = $tokenGrantor;
+        $this->tokenClient  = $tokenClient;
     }
 
+    /**
+     * (non-PHPdoc)
+     * @see \GuzzleHttp\Event\SubscriberInterface::getEvents()
+     */
     public function getEvents()
     {
-        return [
-            'before' => ['onBefore', RequestEvents::SIGN_REQUEST],
-            'error'  => ['onError', RequestEvents::EARLY],
-        ];
+        return $this->events;
     }
 
+    /**
+     * If the event authorization is 'oauth2', add a token to the request header.
+     *
+     * @param BeforeEvent $event the event to handle
+     */
     public function onBefore(BeforeEvent $event)
     {
         $request = $event->getRequest();
+        $grantor = $this->tokenGrantor;
 
         // Only sign requests using "auth"="oauth2"
-        if ($request->getConfig()->get('auth') != 'oauth2') {
-            return;
+        if ($request->getConfig()->get('auth') == 'oauth2'
+            && $token = $grantor($this->tokenClient)
+        ) {
+            $token->addAuthorizationHeader($request);
         }
-
-        $token = $this->getAccessToken();
-        $header = $this->getAuthorizationHeader($token);
-
-        $request->setHeader('Authorization', $header);
     }
 
+    /**
+     * If the response code is 401 and the request has not been retried, retry with
+     * an access token.
+     *
+     * @param ErrorEvent $event the event to handle
+     */
     public function onError(ErrorEvent $event)
     {
-        if (401 == $event->getResponse()->getStatusCode()) {
-            $request = $event->getRequest();
-            if (!$request->getConfig()->get('retried')) {
-                if ($this->acquireAccessToken()) {
-                    $request->getConfig()->set('retried', true);
-                    $this->setHeader($request);
-                    $event->intercept($event->getClient()->send($request));
-                }
+        $request = $event->getRequest();
+        $config  = $request->getConfig();
+        $grantor = $this->tokenGrantor;
+
+        if (401 == $event->getResponse()->getStatusCode() && !$config->get('retried')) {
+            $config->set('retried', true);
+            if ($token = $grantor($this->tokenClient)) {
+                $token->addAuthorizationHeader($request);
+                $event->intercept($event->getClient()->send($request));
             }
         }
-    }
-
-    /**
-     * Set access token
-     *
-     * @param AccessToken $accessToken OAuth2 access token
-     */
-    public function setAccessToken(AccessToken $accessToken)
-    {
-        $this->accessToken = $accessToken;
-    }
-
-    /**
-     * Get access token
-     *
-     * @return AccessToken Oauth2 access token
-     */
-    public function getAccessToken()
-    {
-        if (null === $this->accessToken) {
-            $this->acquireAccessToken();
-        }
-
-        return $this->accessToken;
-    }
-
-    private function setHeader(RequestInterface $request)
-    {
-        $token = $this->getAccessToken();
-        $header = $this->getAuthorizationHeader($token);
-        $request->setHeader('Authorization', $header);
-    }
-
-    private function getAuthorizationHeader(AccessToken $token)
-    {
-        return sprintf('Bearer %s', $token->getToken());
-    }
-
-    private function acquireAccessToken()
-    {
-        if ($this->grantType) {
-            $this->accessToken = $this->grantType->getToken();
-        }
-
-        return $this->accessToken;
     }
 }
